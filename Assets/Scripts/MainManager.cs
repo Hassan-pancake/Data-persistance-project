@@ -1,30 +1,31 @@
-using System.IO;
+﻿using System.IO;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class MainManager : MonoBehaviour
 {
+    public string PlayerName;
     public Brick BrickPrefab;
     public int LineCount = 6;
     public Rigidbody Ball;
 
     public Text ScoreText;
-    public Text HighScoreText; //for ui
+    public Text HighScoreText;
     public GameObject GameOverText;
 
     private bool m_Started = false;
     private int m_Points;
-    private int m_highScore; //to store highscore var
-
+    private int m_highScore;
     private bool m_GameOver = false;
-    private string highScoreFilePath; //a path where we can save data
+    private string highScoreFilePath;
 
-    // Start is called before the first frame update
     void Start()
     {
-        highScoreFilePath = Application.persistentDataPath + "/HighScore.json"; //intializing path with name highscore and format json
+        PlayerName = PlayerPrefs.GetString("PlayerName", "Player");
+        highScoreFilePath = Application.persistentDataPath + "/HighScore.json";
         LoadHighscore();
+
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
 
@@ -60,7 +61,8 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
-                SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+                SceneManager.LoadScene(1);
+                SaveHighScore();
             }
         }
     }
@@ -82,35 +84,46 @@ public class MainManager : MonoBehaviour
         }
     }
 
-    //converts to json then stores
-    public void SaveHighScore()      //to save data in located file path
+    public void SaveHighScore()
     {
-        HighScoreData data = new HighScoreData { highscore = m_highScore };  /*we used our seriazble class here {assigned our highscore}
-                                                                             with this now we only have highscore in HighscoreData class so we only assigned this.*/
-        string json = JsonUtility.ToJson(data);  //converted data to jason
-        File.WriteAllText(highScoreFilePath, json); //gave file path and uploaded json there
+        PlayerName = PlayerPrefs.GetString("PlayerName", "Player");
 
+        HighScoreData data = new HighScoreData
+        {
+            highscore = m_highScore,
+            playerName = PlayerName
+        };
+
+        string json = JsonUtility.ToJson(data);
+        File.WriteAllText(highScoreFilePath, json);
     }
 
-    //reads info from path revert it to usable code
-    public void LoadHighscore()  //to load data from saved path
+    public void LoadHighscore()
     {
         if (File.Exists(highScoreFilePath))
         {
-            string json = File.ReadAllText(highScoreFilePath);  //read our json info from path
-            HighScoreData data = JsonUtility.FromJson<HighScoreData>(json); //converted to highscore data again so we can use in our code
-            m_highScore = data.highscore; //assigned our highscore
+            string json = File.ReadAllText(highScoreFilePath);
+            HighScoreData data = JsonUtility.FromJson<HighScoreData>(json);
+
+            m_highScore = data.highscore;
+            PlayerName = data.playerName;
+
         }
         else
         {
             m_highScore = 0;
+            PlayerName = "Player";
         }
-        HighScoreText.text = "BestScore: " + m_highScore;
+
+        HighScoreText.text = "BestScore: " + PlayerName + " : " + m_highScore;
     }
+
+
 }
 
 [System.Serializable]
 public class HighScoreData
 {
     public int highscore;
+    public string playerName;
 }
